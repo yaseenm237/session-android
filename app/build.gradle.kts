@@ -1,5 +1,4 @@
-import com.android.build.api.dsl.VariantDimension
-import com.android.build.api.variant.FilterConfiguration
+import com.android.build.api.variant.VariantOutputConfiguration
 import java.io.ByteArrayOutputStream
 
 plugins {
@@ -50,7 +49,7 @@ val firebaseEnabledVariants = listOf("play", "fdroid")
 val nonPlayVariants = listOf("fdroid", "website") + if (huaweiEnabled) listOf("huawei") else emptyList()
 val nonDebugBuildTypes = listOf("release", "releaseWithDebugMenu", "qa", "automaticQa")
 
-fun VariantDimension.devNetDefaultOn(defaultOn: Boolean) {
+fun com.android.build.api.dsl.BuildType.devNetDefaultOn(defaultOn: Boolean) {
     val fqEnumClass = "org.session.libsession.utilities.Environment"
     buildConfigField(
         fqEnumClass,
@@ -59,20 +58,14 @@ fun VariantDimension.devNetDefaultOn(defaultOn: Boolean) {
     )
 }
 
-/**
- * Whether this build honours the automated-test configuration passed as launch intent extras
- * (see QaLaunchConfig).
- *
- * This is a SECURITY boundary, not a convenience flag: the launcher activity-alias is
- * `android:exported="true"`, so any app on the device can start it with extras. Only QA/debug
- * builds may act on them. Being a compile-time constant, R8 strips the reader entirely from
- * builds where this is false. Default off — new build types must opt in explicitly.
- */
-fun VariantDimension.allowQaLaunchConfig(allow: Boolean) {
+fun com.android.build.api.dsl.BuildType.allowQaLaunchConfig(allow: Boolean) {
+    buildConfigField("boolean", "ALLOW_QA_LAUNCH_CONFIG", allow.toString())
+}
+fun com.android.build.api.dsl.ApplicationDefaultConfig.allowQaLaunchConfig(allow: Boolean) {
     buildConfigField("boolean", "ALLOW_QA_LAUNCH_CONFIG", allow.toString())
 }
 
-fun VariantDimension.enablePermissiveNetworkSecurityConfig(permissive: Boolean) {
+fun com.android.build.api.dsl.BuildType.enablePermissiveNetworkSecurityConfig(permissive: Boolean) {
     manifestPlaceholders["network_security_config"] = if (permissive) {
         "@xml/network_security_configuration_permissive"
     } else {
@@ -80,7 +73,7 @@ fun VariantDimension.enablePermissiveNetworkSecurityConfig(permissive: Boolean) 
     }
 }
 
-fun VariantDimension.setAlternativeAppName(alternative: String?) {
+fun com.android.build.api.dsl.BuildType.setAlternativeAppName(alternative: String?) {
     if (alternative != null) {
         manifestPlaceholders["app_name"] = alternative
     } else {
@@ -88,12 +81,12 @@ fun VariantDimension.setAlternativeAppName(alternative: String?) {
     }
 }
 
-fun VariantDimension.setAuthorityPostfix(postfix: String) {
+fun com.android.build.api.dsl.BuildType.setAuthorityPostfix(postfix: String) {
     manifestPlaceholders["authority_postfix"] = postfix
     buildConfigField("String", "AUTHORITY_POSTFIX", "\"$postfix\"")
 }
 
-fun VariantDimension.enableClientVersionCheck(enable: Boolean) {
+fun com.android.build.api.dsl.BuildType.enableClientVersionCheck(enable: Boolean) {
     buildConfigField(
         "boolean",
         "CHECK_VERSION",
@@ -540,7 +533,7 @@ fun autoResConfig(): List<String> {
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
-            val abiName = output.filters.firstOrNull { it.filterType == FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"
+            val abiName = output.filters.firstOrNull { it.filterType == VariantOutputConfiguration.FilterType.ABI }?.identifier ?: "universal"
             val versionCodeAdditions = checkNotNull(abiPostFix[abiName]) { "$abiName does not exist" }
             output.versionCode.set(canonicalVersionCode * postFixSize + versionCodeAdditions)
         }
